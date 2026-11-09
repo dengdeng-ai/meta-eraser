@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>뎅 메타 지우개</title>
+<title>그림 메타 지우개</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <style>
@@ -37,8 +37,10 @@
   .seg button.on{background:var(--accent);color:#fff;font-weight:600}
   input[type=text],input[type=number]{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:0;flex:1;max-width:240px}
   input[type=range]{accent-color:var(--accent);width:140px}
+  @media (max-width:480px){ input[type=range]{width:100px} }
   .icon-btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:5px 9px;cursor:pointer;font:inherit;color:var(--text)}
-  .hint{color:var(--sub);font-size:12px;width:100%;margin-top:-2px}
+  .hint{color:var(--sub);font-size:12.5px;width:100%;margin-top:-2px}
+  @media (min-width:520px){ .hint{padding-left:86px} }
   .hidden{display:none!important}
   label.chk{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
   label.chk input{accent-color:var(--accent);width:16px;height:16px}
@@ -68,12 +70,7 @@
   .go:disabled{opacity:.45;cursor:default}
   .status{text-align:center;color:var(--sub);font-size:13px;margin-top:10px;min-height:20px}
   .settings{padding:0}
-  .settings summary{list-style:none;cursor:pointer;padding:14px 18px;display:flex;justify-content:space-between;gap:10px;font-weight:600}
-  .settings summary::-webkit-details-marker{display:none}
-  .settings summary::after{content:'▾';color:var(--sub);margin-left:6px}
-  .settings[open] summary::after{content:'▴'}
-  .settings .sum{color:var(--sub);font-weight:400;font-size:13px;margin-left:auto;text-align:right}
-  .settings[open] .sum{display:none}
+  .settings-title{padding:14px 18px;font-weight:600}
   .settings .row:first-of-type{border-top:1px solid var(--line);padding-top:10px}
   .settings .row{margin:0 18px}
   .settings .row:last-child{padding-bottom:16px}
@@ -95,6 +92,14 @@
   .name-row .name{flex:1;min-width:0}
   .handle{cursor:grab;color:var(--sub);font-size:18px;line-height:1;padding:2px 4px;touch-action:none;user-select:none;-webkit-user-select:none}
   .sort-ghost{opacity:.35}
+  .fold{border:0;background:none;padding:0;font:inherit;font-weight:600;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .fold .arrow{color:var(--sub);font-size:12px}
+  #listCard.folded #list, #listCard.folded #tip{display:none!important}
+  #listCard.folded .list-head{margin-bottom:0}
+  .seg button{white-space:nowrap}
+  @media (max-width:480px){ .seg button{padding:6px 9px} }
+  input[type=number]{flex:none;width:72px;-moz-appearance:textfield;appearance:textfield}
+  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
   .tip{background:var(--ok-soft);color:var(--ok);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px}
   .dock{position:sticky;bottom:0;margin:12px -18px -18px;padding:8px 18px 12px;background:var(--card);border-top:1px solid var(--line);border-radius:0 0 14px 14px;z-index:5}
   .dock .status{margin:0 0 6px;min-height:0}
@@ -111,8 +116,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>뎅 메타 지우개</h1>
-  <p class="lead">사진 속 AI 생성 정보(프롬프트), 위치(GPS), 촬영 정보, 기기 정보를 지웁니다. 모든 처리는 브라우저 안에서만 이루어지며 어디에도 업로드되지 않습니다.</p>
+  <h1>그림 메타 지우개</h1>
+  <p class="lead">사진 속 AI 생성 정보(프롬프트) 등 메타데이터를 지웁니다. 모든 처리는 브라우저 안에서만 이루어지며 어디에도 업로드되지 않습니다.</p>
 
   <div class="card">
     <div class="drop" id="drop">
@@ -126,7 +131,7 @@
   <div class="card hidden" id="listCard">
     <div class="tip hidden" id="tip">✓ 숨은 정보를 지웠습니다. 폰에서는 사진을 꾹 눌러 저장하세요.</div>
     <div class="list-head">
-      <div class="t">사진 <small id="count">0장</small></div>
+      <button class="t fold" id="fold">사진 <small id="count">0장</small><span class="arrow" id="foldArrow">▴</span></button>
       <button class="link" id="clear">목록 비우기</button>
     </div>
     <div id="list" class="grid"></div>
@@ -138,8 +143,8 @@
       </div>
     </div>
   </div>
-  <details class="card settings" id="settings" open>
-    <summary><span>설정</span><span class="sum" id="sum"></span></summary>
+  <div class="card settings" id="settings">
+    <div class="settings-title">설정<span class="sum hidden" id="sum"></span></div>
     <div class="row">
       <div class="lbl">저장 형식</div>
       <div class="seg" id="fmt">
@@ -152,8 +157,8 @@
     </div>
     <div class="row hidden" id="qRow">
       <div class="lbl">품질</div>
-      <input type="range" id="q" min="50" max="100" value="92">
-      <span id="qv">92%</span>
+      <input type="range" id="q" min="50" max="100" value="90">
+      <span style="display:inline-flex;align-items:center;gap:6px"><input type="number" id="qn" min="50" max="100" value="90" inputmode="numeric"><span>%</span></span>
     </div>
     <div class="row hidden" id="bgRow">
       <div class="lbl">투명 부분</div>
@@ -166,18 +171,20 @@
       <div class="lbl">가로 길이</div>
       <div class="seg" id="size">
         <button data-v="orig" class="on">원래 크기</button>
-        <button data-v="1080">1080</button>
-        <button data-v="1600">1600</button>
-        <button data-v="2048">2048</button>
+        <button data-v="832">832</button>
+        <button data-v="1024">1024</button>
+        <button data-v="1216">1216</button>
+        <button data-v="custom">직접 입력</button>
       </div>
-      <div class="hint">가로를 이 길이로 줄입니다. 비율은 유지되며, 더 작은 사진은 그대로 둡니다.</div>
+      <span id="sizeBox" class="hidden" style="display:inline-flex;align-items:center;gap:6px"><input type="number" id="sizeCustom" min="16" max="10000" value="1200" inputmode="numeric"><span>px</span></span>
+      <div class="hint">업스케일한 그림을 원래 크기로 되돌리거나 용량을 줄일 때 씁니다. 832는 세로, 1024는 정사각, 1216은 가로 그림의 NovelAI 기본 크기입니다. 비율은 유지되며, 이보다 작은 그림은 그대로 둡니다.</div>
     </div>
     <div class="row">
       <div class="lbl">파일 이름</div>
       <div class="seg" id="nm">
         <button data-v="rand" class="on">무작위 숫자</button>
         <button data-v="orig">원본 파일명</button>
-        <button data-v="custom">직접 정하기</button>
+        <button data-v="custom">직접 입력</button>
       </div>
     </div>
     <div class="row hidden" id="customRow">
@@ -187,16 +194,16 @@
     </div>
     <div class="row hidden" id="startRow">
       <div class="lbl">시작 번호</div>
-      <input type="number" id="startNo" min="0" value="1" inputmode="numeric" style="max-width:90px">
+      <input type="number" id="startNo" min="0" value="1" inputmode="numeric">
       <div class="hint" id="startHint"></div>
     </div>
-  </details>
+  </div>
 </div>
 
-<div class="drop-overlay"><div>여기에 놓으면 올라갑니다</div></div>
+<div class="drop-overlay"><div>여기에 놓아주세요</div></div>
 <script>
 const $ = s => document.querySelector(s);
-const state = { fmt:'orig', q:92, bg:'#ffffff', nm:'rand', size:'orig' };
+const state = { fmt:'orig', q:90, bg:'#ffffff', nm:'rand', size:'orig' };
 let items = [];
 let uid = 0;
 let downloads = null;
@@ -442,18 +449,31 @@ async function convert(file,fmt,opt={}){
 }
 
 /* ---------- 파일 추가 ---------- */
+// 사진 내용으로 같은 사진인지 비교
+async function hashOf(u){
+  try{ const h=await crypto.subtle.digest('SHA-256',u); return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+  catch(e){ let h=2166136261; for(let i=0;i<u.length;i++){ h^=u[i]; h=Math.imul(h,16777619); } return u.length+'-'+(h>>>0); }
+}
 async function addFiles(files){
   if(!files.length) return;
   if(busy){ $('#status').textContent='처리 중입니다. 잠시 후 다시 올리면 됩니다.'; return; }
-  const fresh=[];
+  const fresh=[]; let skipped=0;
+  const known=new Set(items.map(i=>i.hash).filter(Boolean));
   for(const f of files){
-    const it={id:++uid,file:f,thumb:URL.createObjectURL(f),meta:null,err:null,done:null,open:false};
+    let u;
+    try{ u=new Uint8Array(await f.arrayBuffer()); }catch(e){ continue; }
+    const hash=await hashOf(u);
+    if(known.has(hash)){ skipped++; continue; }
+    known.add(hash);
+    const it={id:++uid,file:f,hash,raw:u,thumb:URL.createObjectURL(f),meta:null,err:null,done:null,open:false};
     items.push(it); fresh.push(it);
   }
+  $('#status').textContent = skipped ? `이미 올린 사진 ${skipped}장은 건너뛰었습니다.` : '';
+  if(!fresh.length) return;
   render();
   for(const it of fresh){
     try{
-      const u=new Uint8Array(await it.file.arrayBuffer());
+      const u=it.raw; delete it.raw;
       it.type=sniff(u);
       if(!it.type) throw new Error('지원하지 않는 파일입니다');
       it.u=u;
@@ -461,7 +481,9 @@ async function addFiles(files){
       catch(e){ it.meta=[]; it.parseFail=true; }
     }catch(e){ it.err=e.message; }
   }
+  const msg=$('#status').textContent;
   await process();
+  if(msg) $('#status').textContent=msg;
 }
 
 /* ---------- 화면 그리기 ---------- */
@@ -474,8 +496,7 @@ function render(){
   $('#tip').classList.toggle('hidden',!doneN);
   $('#saveBar').classList.toggle('hidden',!doneN);
     $('#zipBtn').disabled=busy;
-    $('#saveAll').disabled=busy&&!savingAll;
-    $('#saveAll').textContent=savingAll?'저장 멈추기':'전체 저장';
+    $('#saveAll').disabled=busy;
   list.innerHTML='';
   for(const it of items){
     const cell=document.createElement('div'); cell.className='cell'; cell.dataset.id=it.id;
@@ -578,11 +599,12 @@ async function process(){
         let bytes, type, hidden=false;
         type = state.fmt==='orig' ? it.type : state.fmt;
         const resize = state.size!=='orig';
+        const maxW = state.size==='custom' ? customWidth() : +state.size;
         const pixel = type==='png' || type==='webp';
         if(state.fmt==='orig' && !resize && !pixel && it.clean && !it.parseFail) bytes=it.clean;
         else {
           if(type==='gif') type='png';
-          const r=await convert(it.file,type,{max:resize?state.size:0,pixel,detect:it.type==='png'||it.type==='webp',q:state.fmt==='orig'?0.95:undefined});
+          const r=await convert(it.file,type,{max:resize?maxW:0,pixel,detect:it.type==='png'||it.type==='webp',q:state.fmt==='orig'?0.95:undefined});
           bytes=r.bytes; hidden=r.hidden;
         }
         it.done={bytes,type,pixel:hidden,size:bytes.length,url:URL.createObjectURL(new Blob([bytes],{type:MIME[type]}))};
@@ -681,7 +703,10 @@ function syncFmt(){
 }
 seg('#fmt','fmt',syncFmt);
 seg('#bg','bg',()=>{ if(state.fmt==='jpeg'){ resetDone(); process(); } });
-seg('#size','size',()=>{ resetDone(); process(); });
+function customWidth(){ const v=parseInt($('#sizeCustom').value,10); return isNaN(v)||v<16 ? 1200 : Math.min(10000,v); }
+seg('#size','size',()=>{ $('#sizeBox').classList.toggle('hidden',state.size!=='custom'); resetDone(); process(); });
+$('#sizeCustom').addEventListener('change',e=>{ e.target.value=customWidth(); saveSettings(); if(state.size==='custom'){ resetDone(); process(); } });
+$('#sizeCustom').addEventListener('keydown',e=>{ if(e.key==='Enter') e.target.blur(); });
 
 seg('#nm','nm',()=>{ $('#customRow').classList.toggle('hidden',state.nm!=='custom'); $('#startRow').classList.toggle('hidden',state.nm!=='custom'); process(); });
 $('#startNo').addEventListener('input',()=>{ updStartHint(); process(); });
@@ -693,7 +718,12 @@ function updStartHint(){
   $('#startHint').textContent = n>1 ? `${base}_${String(a).padStart(w,'0')} ~ ${base}_${String(a+n-1).padStart(w,'0')}` : `${base}_${String(a).padStart(w,'0')}`;
 }
 $('#customName').addEventListener('change',()=>process());
-$('#q').oninput=e=>{ state.q=+e.target.value; $('#qv').textContent=state.q+'%'; };
+$('#q').oninput=e=>{ state.q=+e.target.value; $('#qn').value=state.q; };
+$('#qn').addEventListener('change',e=>{
+  let v=parseInt(e.target.value,10); if(isNaN(v)) v=state.q; v=Math.min(100,Math.max(50,v));
+  e.target.value=v; $('#q').value=v; state.q=v; saveSettings(); resetDone(); process();
+});
+$('#qn').addEventListener('keydown',e=>{ if(e.key==='Enter') e.target.blur(); });
 $('#q').onchange=()=>{ resetDone(); process(); };
 $('#dice').onclick=()=>{
   const a='bcdfghjklmnprstvz', v='aeiou'; let s='';
@@ -714,7 +744,8 @@ document.addEventListener('dragleave',()=>{ dragDepth=Math.max(0,dragDepth-1); i
 document.addEventListener('dragover',e=>e.preventDefault());
 document.addEventListener('drop',e=>{ dragDepth=0; document.body.classList.remove('dragging'); if(!drop.contains(e.target)){ e.preventDefault(); addFiles([...e.dataTransfer.files].filter(isImg)); } });
 $('#clear').onclick=()=>{ if(busy) return; resetDone(); items=[]; render(); $('#status').textContent=''; };
-$('#saveAll').onclick=()=>{ if(savingAll){ stopSave=true; return; } saveFiles(false); };
+$('#fold').onclick=()=>{ const f=$('#listCard').classList.toggle('folded'); $('#foldArrow').textContent=f?'▾':'▴'; };
+$('#saveAll').onclick=()=>saveFiles(false);
 $('#zipBtn').onclick=()=>saveFiles(true);
 document.addEventListener('paste',e=>{
   const fs=[...(e.clipboardData?.files||[])].filter(f=>/^image\//.test(f.type));
@@ -725,13 +756,13 @@ document.addEventListener('paste',e=>{
 const KEY='metaCleaner.v2';
 function updateSum(){
   const f={orig:'원래 형식',png:'PNG',jpeg:'JPG '+state.q+'%',webp:'WebP '+state.q+'%'}[state.fmt];
-  const n={orig:'원본 파일명',rand:'무작위 숫자',custom:'직접 정한 이름'}[state.nm];
-  const parts=[f]; if(state.size!=='orig') parts.push('가로 '+state.size+'px'); parts.push(n);
+  const n={orig:'원본 파일명',rand:'무작위 숫자',custom:'직접 입력한 이름'}[state.nm];
+  const parts=[f]; if(state.size!=='orig') parts.push('가로 '+(state.size==='custom'?customWidth():state.size)+'px'); parts.push(n);
   $('#sum').textContent=parts.join(' · ');
 }
 function saveSettings(){
   updateSum();
-  try{ localStorage.setItem(KEY,JSON.stringify({...state,custom:$('#customName').value,start:$('#startNo').value})); }catch(e){}
+  try{ localStorage.setItem(KEY,JSON.stringify({...state,custom:$('#customName').value,start:$('#startNo').value,sizeCustom:$('#sizeCustom').value})); }catch(e){}
 }
 function loadSettings(){
   let s=null; try{ s=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){}
@@ -739,9 +770,10 @@ function loadSettings(){
   for(const [id,key] of [['#fmt','fmt'],['#bg','bg'],['#nm','nm'],['#size','size']]){
     const b=$(id).querySelector(`button[data-v="${s[key]}"]`); if(b) b.click();
   }
-  if(s.q){ $('#q').value=s.q; state.q=+s.q; $('#qv').textContent=s.q+'%'; }
+  if(s.q){ $('#q').value=s.q; state.q=+s.q; $('#qn').value=s.q; }
   if(s.custom) $('#customName').value=s.custom;
   if(s.start) $('#startNo').value=s.start;
+  if(s.sizeCustom) $('#sizeCustom').value=s.sizeCustom;
 }
 document.querySelector('#settings').addEventListener('input',saveSettings);
 document.querySelector('#settings').addEventListener('click',()=>setTimeout(saveSettings,0));
