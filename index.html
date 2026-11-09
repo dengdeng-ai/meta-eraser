@@ -177,7 +177,7 @@
         <button data-v="custom">직접 입력</button>
       </div>
       <span id="sizeBox" class="hidden" style="display:inline-flex;align-items:center;gap:6px"><input type="number" id="sizeCustom" min="16" max="10000" value="1200" inputmode="numeric"><span>px</span></span>
-      <div class="hint">업스케일한 그림을 원래 크기로 되돌리거나 용량을 줄일 때 씁니다. 832는 세로, 1024는 정사각, 1216은 가로 그림의 NovelAI 기본 크기입니다. 비율은 유지되며, 이보다 작은 그림은 그대로 둡니다.</div>
+      <div class="hint">가로를 이 길이로 맞춥니다. 비율은 유지됩니다.</div>
     </div>
     <div class="row">
       <div class="lbl">파일 이름</div>
@@ -427,7 +427,7 @@ async function convert(file,fmt,opt={}){
   const hidden = opt.detect ? detectHidden(bmp) : false;
   let w=bmp.width, h=bmp.height;
   const max=+opt.max||0;
-  if(max && w>max){ const r=max/w; w=max; h=Math.round(h*r); }
+  if(max && w!==max){ const r=max/w; w=max; h=Math.round(h*r); }
   const c=document.createElement('canvas'); c.width=w; c.height=h;
   const ctx=c.getContext('2d',{willReadFrequently:!!opt.pixel});
   ctx.imageSmoothingQuality='high';
