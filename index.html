@@ -84,7 +84,8 @@
   .imgwrap{position:relative}
   .img-acts{display:flex;border-top:1px solid var(--line)}
   .img-acts .copy-btn+.copy-btn{border-left:1px solid var(--line)}
-  .copy-btn{flex:1;padding:8px 0;border:0;background:transparent;color:var(--ok);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+  .copy-btn{flex:1;padding:9px 0;border:0;background:transparent;color:var(--ok);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .copy-btn svg{width:17px;height:17px}
   .copy-btn:hover{background:var(--accent-soft)}
   .drop-overlay{display:none;position:fixed;inset:10px;border:2px dashed var(--accent);border-radius:16px;background:color-mix(in srgb, var(--bg) 55%, transparent);z-index:60;align-items:center;justify-content:center;pointer-events:none;font-weight:600;color:var(--ok);font-size:16px}
   body.dragging .drop-overlay{display:flex}
@@ -207,6 +208,12 @@ const state = { fmt:'orig', q:90, bg:'#ffffff', nm:'rand', size:'orig' };
 let items = [];
 let uid = 0;
 let downloads = null;
+const svg=d=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+const ICON={
+  save: svg('<path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/>'),
+  copy: svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'),
+  done: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>')
+};
 const IN_CLAUDE = !!(window.claude && window.claude.use);  // Claude 안에서 열렸는지
 const SAVE_MSG = IN_CLAUDE ? '저장 확인 창에서 "저장"을 누르면 저장됩니다.' : '저장 중…';
 let busy=false, again=false, stopSave=false, savingAll=false;
@@ -521,9 +528,9 @@ function render(){
       if(it.done.pixel) s.title='숨은 정보: 사진 픽셀 속에 몰래 넣어둔 정보(NovelAI 등)';
       s.textContent = removed.length ? '✓ '+removed.join(' · ') : '✓ 지울 정보 없음';
       chips.append(s);
-      const cp=document.createElement('button'); cp.className='copy-btn'; cp.textContent='복사';
+      const cp=document.createElement('button'); cp.className='copy-btn'; cp.innerHTML=ICON.copy; cp.title='복사'; cp.setAttribute('aria-label','복사');
       cp.onclick=()=>copyImage(it,cp);
-      const sv=document.createElement('button'); sv.className='copy-btn'; sv.textContent='저장';
+      const sv=document.createElement('button'); sv.className='copy-btn'; sv.innerHTML=ICON.save; sv.title='저장'; sv.setAttribute('aria-label','저장');
       sv.onclick=()=>saveOne(it,sv);
       const acts=document.createElement('div'); acts.className='img-acts'; acts.append(sv,cp); cell.copyBtn=acts;
     }
@@ -542,7 +549,7 @@ async function copyImage(it,btn){
   try{
     const data = it.done.type==='png' ? Promise.resolve(new Blob([it.done.bytes],{type:'image/png'})) : toPng(it.done.url);
     await navigator.clipboard.write([new ClipboardItem({'image/png':data})]);
-    btn.textContent='복사됨'; setTimeout(()=>btn.textContent='복사',1500); $('#status').textContent='';
+    btn.innerHTML=ICON.done; setTimeout(()=>btn.innerHTML=ICON.copy,1500); $('#status').textContent='';
   }catch(e){
     $('#status').textContent='이 화면에서는 복사 버튼이 동작하지 않습니다. 사진을 우클릭(폰은 꾹 누르기)한 뒤 "이미지 복사"를 누르면 됩니다.';
   }
@@ -552,7 +559,7 @@ async function saveOne(it,btn){
   if(!downloads && IN_CLAUDE){ $('#status').textContent='이 화면에서는 파일 저장이 되지 않습니다. 사진을 꾹 누르거나 우클릭해서 저장하면 됩니다.'; return; }
   try{
     await saveWithTimeout({filename:it.done.name,data:new Blob([it.done.bytes])});
-    btn.textContent='저장됨'; setTimeout(()=>btn.textContent='저장',1500);
+    btn.innerHTML=ICON.done; setTimeout(()=>btn.innerHTML=ICON.save,1500);
   }catch(e){
     if(e&&e.code==='declined') return;
     $('#status').textContent=(e&&e.code==='timeout')?'저장 확인 창이 뜨지 않아 중단했습니다. 사진을 우클릭한 뒤 "이미지를 다른 이름으로 저장"을 누르면 됩니다.':'이 화면에서는 파일 저장이 되지 않습니다. 사진을 꾹 누르거나 우클릭해서 저장하면 됩니다.';
