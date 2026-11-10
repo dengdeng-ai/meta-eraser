@@ -564,7 +564,22 @@ async function copyImage(it,btn){
   }
 }
 
+// 아이폰·아이패드: 공유 창을 띄우면 "이미지 저장"으로 바로 사진 앱에 저장됨
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+function toFile(r){ return new File([r.bytes], r.name, {type:MIME[r.type]}); }
+function canShareFiles(files){ try{ return !IN_CLAUDE && IS_IOS && navigator.canShare && navigator.canShare({files}); }catch(e){ return false; } }
+async function shareToPhotos(files){
+  try{ await navigator.share({files}); return true; }
+  catch(e){ if(e&&e.name==='AbortError') return false; throw e; }
+}
+
 async function saveOne(it,btn){
+  const f=[toFile(it.done)];
+  if(canShareFiles(f)){
+    try{ if(await shareToPhotos(f)){ btn.innerHTML=ICON.done; setTimeout(()=>btn.innerHTML=ICON.save,1500); } }
+    catch(e){ $('#status').textContent='공유 창을 열지 못했습니다. 사진을 꾹 눌러 저장하세요.'; }
+    return;
+  }
   if(!downloads && IN_CLAUDE){ $('#status').textContent='이 화면에서는 파일 저장이 되지 않습니다. 사진을 꾹 누르거나 우클릭해서 저장하면 됩니다.'; return; }
   try{
     await saveWithTimeout({filename:it.done.name,data:new Blob([it.done.bytes])});
@@ -652,6 +667,14 @@ async function saveFiles(zip){
   if(!res.length||busy) return;
   if(!downloads && IN_CLAUDE){ $('#status').textContent='이 화면에서는 파일 저장이 되지 않습니다. 사진을 꾹 누르거나 우클릭해서 저장하면 됩니다.'; return; }
   if(zip && !window.JSZip){ $('#status').textContent='ZIP 기능을 불러오지 못했습니다. 저장하기를 이용해 주세요.'; return; }
+  if(!zip){
+    const files=res.map(toFile);
+    if(canShareFiles(files)){
+      try{ $('#status').textContent = (await shareToPhotos(files)) ? '' : '저장을 취소했습니다.'; }
+      catch(e){ $('#status').textContent='공유 창을 열지 못했습니다. 사진을 꾹 눌러 저장하세요.'; }
+      return;
+    }
+  }
   busy=true; render();
   const status=$('#status');
   try{
